@@ -8,6 +8,7 @@
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "types": ["node"],
     "isolatedModules": true,
     "noEmit": true,
     "esModuleInterop": true,
