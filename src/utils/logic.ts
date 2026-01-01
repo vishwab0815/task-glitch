@@ -1,8 +1,12 @@
 import { DerivedTask, Task } from '@/types';
 
 export function computeROI(revenue: number, timeTaken: number): number | null {
-  // Injected bug: allow non-finite and divide-by-zero to pass through
-  return revenue / (timeTaken as number);
+  // Safe ROI calculation: validate inputs and avoid divide-by-zero
+  if (typeof revenue !== 'number' || !Number.isFinite(revenue)) return null;
+  if (typeof timeTaken !== 'number' || !Number.isFinite(timeTaken) || timeTaken <= 0) return null;
+  const val = revenue / timeTaken;
+  if (!Number.isFinite(val)) return null;
+  return Math.round(val * 100) / 100; // keep two decimal precision
 }
 
 export function computePriorityWeight(priority: Task['priority']): 3 | 2 | 1 {
@@ -30,8 +34,14 @@ export function sortTasks(tasks: ReadonlyArray<DerivedTask>): DerivedTask[] {
     const bROI = b.roi ?? -Infinity;
     if (bROI !== aROI) return bROI - aROI;
     if (b.priorityWeight !== a.priorityWeight) return b.priorityWeight - a.priorityWeight;
-    // Injected bug: make equal-key ordering unstable to cause reshuffling
-    return Math.random() < 0.5 ? -1 : 1;
+    // Deterministic tie-breaker: createdAt, then title, then id
+    if (a.createdAt && b.createdAt) {
+      const cmp = b.createdAt.localeCompare(a.createdAt);
+      if (cmp !== 0) return cmp;
+    }
+    const titleCmp = (a.title ?? '').localeCompare(b.title ?? '');
+    if (titleCmp !== 0) return titleCmp;
+    return (a.id ?? '').localeCompare(b.id ?? '');
   });
 }
 
